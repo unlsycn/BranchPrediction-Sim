@@ -1,0 +1,9 @@
+*.*
+*
+!*/
+!Makefile
+!*.mk
+!*.[cSh][ch]?
+!.gitignore
+!README.md
+!LICENSE

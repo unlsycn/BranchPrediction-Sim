@@ -1,12 +1,12 @@
-#ifndef __BIMODAL_H__
-#define __BIMODAL_H__
+#ifndef __BIMODAL_HH__
+#define __BIMODAL_HH__
 
 #include <cstddef>
 #include <cstdint>
 
-#include "util.h"
+#include "bp.hh"
 template <size_t BIMODAL_WIDTH>
-class Bimodal
+class Bimodal : public IDirectionPredictor
 {
   private:
     using Ctr = Counter<2>;
@@ -15,17 +15,23 @@ class Bimodal
   public:
     Bimodal()
     {
-        for (auto& ctr : bimodal_table)
+        for (auto &ctr : bimodal_table)
             ctr = Ctr(exp2(1));
     }
 
-    bool predict(uint64_t ip)
+    const std::string &getName() override
+    {
+        static const std::string name = fmt::format("Bimodal<{}>", BIMODAL_WIDTH);
+        return name;
+    }
+
+    bool predict(uint64_t ip) override
     {
         uint64_t index = ip & bitmask(BIMODAL_WIDTH);
         return bimodal_table[index].get();
     }
 
-    void update(uint64_t ip, bool taken)
+    void update(uint64_t ip, bool taken) override
     {
         uint64_t index = ip & bitmask(BIMODAL_WIDTH);
         bimodal_table[index].update(taken);

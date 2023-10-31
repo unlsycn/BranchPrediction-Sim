@@ -1,5 +1,5 @@
-#ifndef __TAGE_H__
-#define __TAGE_H__
+#ifndef __TAGE_HH__
+#define __TAGE_HH__
 
 #include <algorithm>
 #include <array>
@@ -11,8 +11,9 @@
 #include <random>
 #include <ratio>
 
-#include "bimodal.h"
-#include "util.h"
+#include "bimodal.hh"
+#include "bp.hh"
+#include "util.hh"
 
 enum class AllocCond
 {
@@ -33,21 +34,28 @@ template <size_t COMPONENT_NUM,                          // number of predictor 
           size_t BASE_WIDTH,                             // width of the base preditor
           size_t PATH_HIST_LEN,                          // length of the path history info
           size_t MIN_HIST_LEN,                           // length of the shortest(first) global history info
-          ratioSpec HIST_ALPHA,                          // growth rate of the length of geometric global history
-          std::array<size_t, COMPONENT_NUM> INDEX_WIDTH, // a array of indexes' width of components
-          std::array<size_t, COMPONENT_NUM> TAG_WIDTH,   // a array of tags' width of components
-          bool RSHIFT_TO_DECRE_USE,                      // use right shift instead of decrement for useful counter
+          ratioSpec HIST_ALPHA,                          // growth rate of the length of geometric global
+                                                         // history
+          std::array<size_t, COMPONENT_NUM> INDEX_WIDTH, // a array of indexes' width
+                                                         // of components
+          std::array<size_t, COMPONENT_NUM> TAG_WIDTH,   // a array of tags' width of
+                                                         // components
+          bool RSHIFT_TO_DECRE_USE,                      // use right shift instead of decrement for useful
+                                                         // counter
           bool USE_BASE_AS_ALT,                          // always use base predictor as alternated component
           size_t ALLOC_NUM,                              // max number of entries allocated at one time
-          AllocCond ALLOC_COND,   // allocate new entry if the eventual prediction is incorrect, rather than the
-                                  // longest matching entry.
-          bool ALLOC_ATLEAST_ONE, // allocate at least one entry
-          bool UPDATE_ALT_WHEN_USEFUL_NONE,      // update the altpred when provider's useful equals 0
-          bool COMPLICATED_HASH,                 // use complicated hash algorithm
-          std::pair<bool, size_t> RESET_STRATEGY // true  - allocation success counter, the width of the counter
-                                                 // false - branch counter, the width of the counter
+          AllocCond ALLOC_COND,                          // allocate new entry if the eventual prediction is
+                                                         // incorrect, rather than the longest matching entry.
+          bool ALLOC_ATLEAST_ONE,                        // allocate at least one entry
+          bool UPDATE_ALT_WHEN_USEFUL_NONE,              // update the altpred when provider's
+                                                         // useful equals 0
+          bool COMPLICATED_HASH,                         // use complicated hash algorithm
+          std::pair<bool, size_t> RESET_STRATEGY         // true  - allocation success
+                                                         // counter, the width of the counter
+                                                         // false - branch counter, the width
+                                                         // of the counter
           >
-class Tage
+class Tage : public IDirectionPredictor
 {
   private:
     static constexpr size_t HIST_LEN(const int n)
@@ -59,7 +67,8 @@ class Tage
     }
     static constexpr size_t MAX_HIST_LEN = HIST_LEN(COMPONENT_NUM - 1);
     // we use the formula according to the original paper
-    // since manually optimized set of history lengths leads to a limited benefits (<0.5%)
+    // since manually optimized set of history lengths leads to a limited benefits
+    // (<0.5%)
 
     static constexpr size_t MAX_INDEX_WIDTH = *std::max_element(INDEX_WIDTH.begin(), INDEX_WIDTH.end());
     static constexpr size_t MAX_TAG_WIDTH = *std::max_element(TAG_WIDTH.begin(), TAG_WIDTH.end());
@@ -84,11 +93,12 @@ class Tage
         }
     };
 
-    using CompEntey = std::pair<int, TageEntry*>;
+    using CompEntey = std::pair<int, TageEntry *>;
     static constexpr auto NULL_ENTRY = CompEntey(-1, nullptr);
 
   private:
-    // use bool array instead std::bitset delivered a 4-fold increase in performance
+    // use bool array instead std::bitset delivered a 4-fold increase in
+    // performance
     bool global_history[MAX_HIST_LEN];
     bool path_history[PATH_HIST_LEN]; // the last bits of the last branch PCs
 
@@ -197,9 +207,10 @@ class Tage
     {
         for (auto i = start; i < COMPONENT_NUM; i++)
         {
-            TageEntry* const entry = &predict_table[i][getIndex(ip, i)];
+            TageEntry *const entry = &predict_table[i][getIndex(ip, i)];
             const auto alloc = entry->useful.none() && (USEFUL_WIDTH > 1 || !entry->pred.isStrong());
-            // when u is single-bit, only entries with u = 0 and pred is not strong can be replaced
+            // when u is single-bit, only entries with u = 0 and pred is not strong
+            // can be replaced
             if (alloc)
             {
                 entry->pred = Ctr(exp2(CTR_WIDTH - 1));
@@ -230,8 +241,8 @@ class Tage
         if (success_alloc.none())
         {
             success_alloc.set();
-            for (auto& comp : predict_table)
-                for (auto& entry : comp)
+            for (auto &comp : predict_table)
+                for (auto &entry : comp)
                     entry.useful--;
         }
     }
@@ -243,8 +254,8 @@ class Tage
         if (branch.all())
         {
             branch.reset();
-            for (auto& comp : predict_table)
-                for (auto& entry : comp)
+            for (auto &comp : predict_table)
+                for (auto &entry : comp)
                     entry.useful--;
         }
     }
@@ -260,7 +271,13 @@ class Tage
         use_alt_on_na = UseAlt(exp2(USEALT_WIDTH - 1));
     }
 
-    bool predict(uint64_t ip)
+    const std::string &getName() override
+    {
+        static const std::string name = fmt::format("TAGE<>");
+        return name;
+    }
+
+    bool predict(uint64_t ip) override
     {
         used_alt = false;
         used_base = false;
@@ -298,12 +315,12 @@ class Tage
         return prediction;
     }
 
-    void update(uint64_t ip, bool taken)
+    void update(uint64_t ip, bool taken) override
     {
         auto provider_entry = provider.second;
         auto alter_entry = alter.second;
 
-        auto mispredict = [taken](TageEntry* entry) -> bool {
+        auto mispredict = [taken](TageEntry *entry) -> bool {
             return !entry || entry->pred.get() != taken;
         };
         bool need_alloc;
@@ -314,7 +331,8 @@ class Tage
         else if (ALLOC_COND == AllocCond::FINAL_MISPRED)
             need_alloc = prediction != taken;
 
-        // The judgment must be made before update, even though it can improve accuracy otherwise
+        // The judgment must be made before update, even though it can improve
+        // accuracy otherwise
 
         if (provider_entry)
         {
