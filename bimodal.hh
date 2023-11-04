@@ -5,18 +5,18 @@
 #include <cstdint>
 
 #include "bp.hh"
-template <size_t BIMODAL_WIDTH>
+template <size_t CTR_WIDTH, size_t BIMODAL_WIDTH, size_t PC_SHIFT_AMT = 3>
 class Bimodal : public IDirectionPredictor
 {
   private:
-    using Ctr = Counter<2>;
+    using Ctr = Counter<CTR_WIDTH>;
     Ctr bimodal_table[exp2(BIMODAL_WIDTH)];
 
   public:
     Bimodal()
     {
         for (auto &ctr : bimodal_table)
-            ctr = Ctr(exp2(1));
+            ctr = Ctr(exp2(CTR_WIDTH - 1));
     }
 
     const std::string &getName() override
@@ -27,13 +27,15 @@ class Bimodal : public IDirectionPredictor
 
     bool predict(uint64_t ip) override
     {
-        uint64_t index = ip & bitmask(BIMODAL_WIDTH);
+        auto pc_used = ip >> PC_SHIFT_AMT;
+        uint64_t index = pc_used & bitmask(BIMODAL_WIDTH);
         return bimodal_table[index].get();
     }
 
     void update(uint64_t ip, bool taken) override
     {
-        uint64_t index = ip & bitmask(BIMODAL_WIDTH);
+        auto pc_used = ip >> PC_SHIFT_AMT;
+        uint64_t index = pc_used & bitmask(BIMODAL_WIDTH);
         bimodal_table[index].update(taken);
     }
 };

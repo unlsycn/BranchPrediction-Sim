@@ -102,7 +102,7 @@ class Tage : public IDirectionPredictor
     bool global_history[MAX_HIST_LEN];
     bool path_history[PATH_HIST_LEN]; // the last bits of the last branch PCs
 
-    Bimodal<BASE_WIDTH> base;
+    Bimodal<2, BASE_WIDTH> base;
     TageEntry predict_table[COMPONENT_NUM][exp2(MAX_INDEX_WIDTH)];
     UseAlt use_alt_on_na;
     Counter<RESET_STRATEGY.second> success_alloc;
@@ -379,7 +379,7 @@ class Tage : public IDirectionPredictor
             if (ALLOC_ATLEAST_ONE && !first_alloc.second)
             {
                 const auto alloc_comp = std::min(start + 1, int(COMPONENT_NUM - 1));
-                predict_table[alloc_comp][getIndex(ip, alloc_comp)].useful = Useful();
+                predict_table[alloc_comp][getIndex(ip, alloc_comp)].useful.reset();
                 allocEntry(ip, start);
             }
         }

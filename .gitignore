@@ -3,7 +3,7 @@
 !*/
 !Makefile
 !*.mk
-!*.[cSh][ch]?
+!*.[cSh][ch]
 !.gitignore
 !README.md
 !LICENSE
