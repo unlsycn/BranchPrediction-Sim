@@ -41,15 +41,15 @@ class LocalBranchPredictor : public IDirectionPredictor
 
     bool predict(uint64_t ip) override
     {
-        auto pc_used = ip >> PC_SHIFT_AMT;
-        return pht[getIndex(pc_used, bht[pc_used & bitmask(BHT_WIDTH)])].get();
+        ip >>= PC_SHIFT_AMT;
+        return pht[getIndex(ip, bht[ip & bitmask(BHT_WIDTH)])].get();
     }
 
     void update(uint64_t ip, bool taken) override
     {
-        auto pc_used = ip >> PC_SHIFT_AMT;
-        auto bht_index = pc_used & bitmask(BHT_WIDTH);
-        pht[getIndex(pc_used, bht[bht_index])].update(taken);
+        ip >>= PC_SHIFT_AMT;
+        auto bht_index = ip & bitmask(BHT_WIDTH);
+        pht[getIndex(ip, bht[bht_index])].update(taken);
         bht[bht_index] = (bht[bht_index] << 1) + taken;
     }
 };

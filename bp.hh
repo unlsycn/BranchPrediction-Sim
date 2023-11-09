@@ -45,30 +45,47 @@ class IDirectionPredictor : public IPredictor
     }
 };
 
-class IAddressPredictor : public IPredictor
+struct BranchTarget
 {
+    uint64_t addr;
+};
+class ITargetPredictor : public IPredictor
+{
+
   private:
-    virtual bool predict(uint64_t ip) = 0;
-    virtual void update(uint64_t ip, uint64_t addr) = 0;
+    virtual BranchTarget *predict(uint64_t ip) = 0;
+    virtual void update(uint64_t ip, BranchTarget target) = 0;
 
   private:
     uint64_t pred_cnt = 0;
+    uint64_t ct_cnt = 0; // control transfer
+    uint64_t mishit_cnt = 0;
     uint64_t correct_cnt = 0;
 
   public:
-    virtual ~IAddressPredictor() = default;
+    virtual ~ITargetPredictor() = default;
 
-    void checkPred(uint64_t ip, uint64_t addr)
+    void checkPred(uint64_t ip, bool is_ct_inst, uint64_t addr)
     {
         pred_cnt++;
-        correct_cnt += predict(ip) == addr;
-        update(ip, addr);
+        auto pred = predict(ip);
+        if (is_ct_inst)
+        {
+            ct_cnt++;
+            correct_cnt += pred && pred->addr == addr;
+            BranchTarget target = {addr};
+            update(ip, target);
+        }
+        else if (pred)
+            mishit_cnt++;
     }
 
     void statistic() override
     {
-        fmt::print("{} prediction accuracy = {} / {} = {}%\n", getName(), correct_cnt, pred_cnt,
-                   (double)correct_cnt / pred_cnt * 100);
+        auto nonct_inst = pred_cnt - ct_cnt;
+        fmt::print("{}\n\t prediction accuracy = {} / {} = {}%\n", getName(), correct_cnt, ct_cnt,
+                   (double)correct_cnt / ct_cnt * 100);
+        fmt::print("\t mishit rate = {} / {} = {}%\n", mishit_cnt, nonct_inst, (double)mishit_cnt / nonct_inst * 100);
     }
 };
 

@@ -50,10 +50,11 @@ template <size_t COMPONENT_NUM,                          // number of predictor 
           bool UPDATE_ALT_WHEN_USEFUL_NONE,              // update the altpred when provider's
                                                          // useful equals 0
           bool COMPLICATED_HASH,                         // use complicated hash algorithm
-          std::pair<bool, size_t> RESET_STRATEGY         // true  - allocation success
+          std::pair<bool, size_t> RESET_STRATEGY,        // true  - allocation success
                                                          // counter, the width of the counter
                                                          // false - branch counter, the width
                                                          // of the counter
+          size_t PC_SHIFT_AMT = 2                        // the shift amount of inst pc to discard lowest bits
           >
 class Tage : public IDirectionPredictor
 {
@@ -279,6 +280,7 @@ class Tage : public IDirectionPredictor
 
     bool predict(uint64_t ip) override
     {
+        ip >>= PC_SHIFT_AMT;
         used_alt = false;
         used_base = false;
         branch++;
@@ -317,6 +319,7 @@ class Tage : public IDirectionPredictor
 
     void update(uint64_t ip, bool taken) override
     {
+        ip >>= PC_SHIFT_AMT;
         auto provider_entry = provider.second;
         auto alter_entry = alter.second;
 

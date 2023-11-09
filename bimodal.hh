@@ -12,6 +12,11 @@ class Bimodal : public IDirectionPredictor
     using Ctr = Counter<CTR_WIDTH>;
     Ctr bimodal_table[exp2(BIMODAL_WIDTH)];
 
+    uint64_t getIndex(uint64_t ip)
+    {
+        return ip & bitmask(BIMODAL_WIDTH);
+    }
+
   public:
     Bimodal()
     {
@@ -27,15 +32,15 @@ class Bimodal : public IDirectionPredictor
 
     bool predict(uint64_t ip) override
     {
-        auto pc_used = ip >> PC_SHIFT_AMT;
-        uint64_t index = pc_used & bitmask(BIMODAL_WIDTH);
+        ip >>= PC_SHIFT_AMT;
+        auto index = getIndex(ip);
         return bimodal_table[index].get();
     }
 
     void update(uint64_t ip, bool taken) override
     {
-        auto pc_used = ip >> PC_SHIFT_AMT;
-        uint64_t index = pc_used & bitmask(BIMODAL_WIDTH);
+        ip >>= PC_SHIFT_AMT;
+        auto index = getIndex(ip);
         bimodal_table[index].update(taken);
     }
 };
