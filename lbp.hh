@@ -10,7 +10,7 @@
 template <size_t CTR_WIDTH, size_t BHT_WIDTH, size_t HIST_LEN, size_t PC_LEN, size_t PHT_WIDTH,
           IndexAlgo INDEX_ALGO = IndexAlgo::CONCAT, size_t PC_SHIFT_AMT = 3>
     requires(HIST_LEN <= 64 && HIST_LEN <= PHT_WIDTH) // histories are stored as uint64_t
-class LocalBranchPredictor : public IDirectionPredictor
+class TwoLevelBranchPredictor : public IDirectionPredictor
 {
   private:
     using Ctr = Counter<CTR_WIDTH>;
@@ -26,7 +26,7 @@ class LocalBranchPredictor : public IDirectionPredictor
     }
 
   public:
-    LocalBranchPredictor()
+    TwoLevelBranchPredictor()
     {
         for (auto &ctr : pht)
             ctr = Ctr(exp2(CTR_WIDTH - 1));
